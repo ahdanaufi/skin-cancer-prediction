@@ -15,13 +15,11 @@ st.write("Aplikasi prediksi medis berbasis model Deep Learning InceptionV3 (Data
 def load_onnx_model():
     model_path = "best_inceptionv3_ham10000.onnx"
     
-    # KUNCI UTAMA: Jika file model belum ada di server Streamlit, unduh otomatis dari GitHub Release
+    # Fungsi auto-download dari Release GitHub jika file belum ada di server
     if not os.path.exists(model_path):
         with st.spinner("Mengunduh model ONNX dari server (Proses ini hanya dilakukan sekali saat web pertama kali dibuka)..."):
-            # ⚠️ GANTI URL DI BAWAH INI dengan Link Address file .onnx dari halaman Release kamu!
+            # ⚠️ PASTIKAN URL DI BAWAH INI SUDAH BENAR (Sesuai hasil copy-right click dari Assets Release)
             url = "https://github.com/ahdanaufi/skin-cancer-prediction/releases/download/v1.0.0/best_inceptionv3_ham10000.onnx"
-            
-            # Proses download otomatis ke server Streamlit
             urllib.request.urlretrieve(url, model_path)
             
     session = ort.InferenceSession(model_path)
@@ -46,19 +44,40 @@ DESKRIPSI_KELAS = {
     'Dermatofibroma': "🟢 **Jinak (Benign).** Nodul kulit jinak kecil yang biasanya muncul di area kaki."
 }
 
-uploaded_file = st.file_uploader("Unggah foto lesi kulit (Format: PNG, JPG, JPEG)", type=["png", "jpg", "jpeg"])
+# ==============================================================================
+# FITUR BARU: PILIHAN INPUT (KAMERA ATAU UPLOAD)
+# ==============================================================================
+st.write("---")
+menu_input = st.radio("Pilih Metode Input Gambar:", ("📷 Ambil Foto via Kamera", "📁 Upload File Gambar"))
 
-if uploaded_file is not None:
-    image = Image.open(uploaded_file).convert('RGB')
-    st.image(image, caption='Gambar yang Anda Unggah', use_column_width=True)
+source_gambar = None
+
+if menu_input == "📷 Ambil Foto via Kamera":
+    # Mengaktifkan kamera internal HP / Webcam Laptop
+    source_gambar = st.camera_input("Posisikan lesi kulit/tahi lalat tepat di tengah kamera dan ambil gambar")
+else:
+    source_gambar = st.file_uploader("Unggah foto lesi kulit (Format: PNG, JPG, JPEG)", type=["png", "jpg", "jpeg"])
+
+# ==============================================================================
+# PROSES PREDIKSI (Jalan jika ada gambar yang masuk dari Kamera / Upload)
+# ==============================================================================
+if source_gambar is not None:
+    image = Image.open(source_gambar).convert('RGB')
     
-    st.write("⏳ *Sedang memproses gambar...*")
+    # Jika dari file uploader kita tampilkan gambarnya, 
+    # kalau dari st.camera_input tidak perlu karena kameranya sudah menampilkan gambarnya otomatis.
+    if menu_input == "📁 Upload File Gambar":
+        st.image(image, caption='Gambar yang Anda Unggah', use_column_width=True)
     
+    st.write("⏳ *Sedang memproses gambar dan menganalisis struktur piksel...*")
+    
+    # Prapemrosesan Gambar
     IMG_WIDTH, IMG_HEIGHT = 120, 120
     image_resized = image.resize((IMG_WIDTH, IMG_HEIGHT))
     img_array = np.array(image_resized, dtype=np.float32) / 255.0
     img_array = np.expand_dims(img_array, axis=0)
 
+    # Jalankan Model ONNX
     onnx_inputs = {input_name: img_array}
     raw_predictions = ort_session.run(None, onnx_inputs)
     predictions = raw_predictions[0][0]
@@ -67,6 +86,7 @@ if uploaded_file is not None:
     label_final = CLASS_LABELS[best_idx]
     confidence_score = predictions[best_idx] * 100
 
+    # Menampilkan Output ke Halaman Web
     st.success("🎉 Analisis Prediksi Selesai!")
     st.subheader(f"Klasifikasi Terdeteksi: **{label_final}**")
     st.metric(label="Confidence Score", value=f"{confidence_score:.2f}%")
