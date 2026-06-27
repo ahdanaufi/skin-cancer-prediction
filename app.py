@@ -1,7 +1,3 @@
-# ==============================================================================
-# PART 2: STREAMLIT WEB APPLICATION (ONNX RUNTIME VERSION)
-# ==============================================================================
-
 import streamlit as st
 import numpy as np
 from PIL import Image
@@ -15,16 +11,17 @@ st.set_page_config(page_title="Deteksi Kanker Kulit AI", page_icon="🔬", layou
 st.title("🔬 Deteksi Kanker Kulit & Lesi Dermoskopi")
 st.write("Aplikasi prediksi medis berbasis model Deep Learning InceptionV3 (Dataset HAM10000).")
 
-# Memuat Model ONNX
 @st.cache_resource
 def load_onnx_model():
     model_path = "best_inceptionv3_ham10000.onnx"
     
-    # Jika file model belum ada di server Streamlit, download otomatis dari GitHub Release
+    # KUNCI UTAMA: Jika file model belum ada di server Streamlit, unduh otomatis dari GitHub Release
     if not os.path.exists(model_path):
-        with st.spinner("Mengunduh model ONNX dari server (hanya dilakukan sekali)..."):
-            # GANTI URL di bawah ini dengan URL file .onnx dari halaman Release kamu
+        with st.spinner("Mengunduh model ONNX dari server (Proses ini hanya dilakukan sekali saat web pertama kali dibuka)..."):
+            # ⚠️ GANTI URL DI BAWAH INI dengan Link Address file .onnx dari halaman Release kamu!
             url = "sha256:6e5504165802b0571fbb2b9879ea006cadc6eea061c92723e1e1f6b1949e0885"
+            
+            # Proses download otomatis ke server Streamlit
             urllib.request.urlretrieve(url, model_path)
             
     session = ort.InferenceSession(model_path)
@@ -34,11 +31,11 @@ try:
     ort_session = load_onnx_model()
     input_name = ort_session.get_inputs()[0].name
 except Exception as e:
-    st.error(f"Gagal memuat file model ONNX. Pastikan 'best_inceptionv3_ham10000.onnx' berada di folder yang sama. Error: {e}")
+    st.error(f"Gagal memuat file model ONNX dari server. Error: {e}")
     st.stop()
 
-# Daftar Kelas & Deskripsi Medis
 CLASS_LABELS = ['Actinic Keratosis', 'Basal Cell Carcinoma', 'Benign Keratosis', 'Dermatofibroma', 'Melanocytic Nevi', 'Melanoma', 'Vascular Lesions']
+
 DESKRIPSI_KELAS = {
     'Melanoma': "⚠️ **Ganas (Malignant).** Jenis kanker kulit paling agresif. Diperlukan penanganan dan biopsi medis segera.",
     'Melanocytic Nevi': "🟢 **Jinak (Benign).** Tahi lalat biasa yang terbentuk dari melanosit. Umumnya aman dan tidak berbahaya.",
@@ -49,32 +46,28 @@ DESKRIPSI_KELAS = {
     'Dermatofibroma': "🟢 **Jinak (Benign).** Nodul kulit jinak kecil yang biasanya muncul di area kaki."
 }
 
-uploaded_file = st.file_uploader("Unggah foto lesi kulit makro/dermoskopi (Format: PNG, JPG, JPEG)", type=["png", "jpg", "jpeg"])
+uploaded_file = st.file_uploader("Unggah foto lesi kulit (Format: PNG, JPG, JPEG)", type=["png", "jpg", "jpeg"])
 
 if uploaded_file is not None:
     image = Image.open(uploaded_file).convert('RGB')
     st.image(image, caption='Gambar yang Anda Unggah', use_column_width=True)
     
-    st.write("⏳ *Sedang memproses struktur piksel citra via ONNX...*")
+    st.write("⏳ *Sedang memproses gambar...*")
     
-    # Prapemrosesan Gambar
     IMG_WIDTH, IMG_HEIGHT = 120, 120
     image_resized = image.resize((IMG_WIDTH, IMG_HEIGHT))
     img_array = np.array(image_resized, dtype=np.float32) / 255.0
-    img_array = np.expand_dims(img_array, axis=0)  # Input shape: [1, 120, 120, 3]
+    img_array = np.expand_dims(img_array, axis=0)
 
-    # Eksekusi Prediksi menggunakan ONNX Runtime
     onnx_inputs = {input_name: img_array}
     raw_predictions = ort_session.run(None, onnx_inputs)
-    predictions = raw_predictions[0][0]  # Mengambil array probabilitas kelas
+    predictions = raw_predictions[0][0]
     
-    # Keputusan Hasil
     best_idx = np.argmax(predictions)
     label_final = CLASS_LABELS[best_idx]
     confidence_score = predictions[best_idx] * 100
 
-    # Output UI
-    st.success("🎉 Analisis Prediksi Sembuh/Selesai!")
+    st.success("🎉 Analisis Prediksi Selesai!")
     st.subheader(f"Klasifikasi Terdeteksi: **{label_final}**")
     st.metric(label="Confidence Score", value=f"{confidence_score:.2f}%")
     
@@ -87,4 +80,4 @@ if uploaded_file is not None:
         st.write(f"**{label}** ({score:.2f}%)")
         st.progress(int(score))
 
-    st.warning("⚠️ **Disclaimer Medis:** Hasil analisis berbasis Kecerdasan Buatan (AI) ini ditujukan untuk riset dan edukasi dengan estimasi akurasi global ~77%. Hasil ini bukan merupakan diagnosis final dokter medis.")
+    st.warning("⚠️ **Disclaimer Medis:** Hasil analisis berbasis Kecerdasan Buatan (AI) ini ditujukan untuk riset dengan estimasi akurasi global ~77%.")
