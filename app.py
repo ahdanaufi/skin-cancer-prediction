@@ -54,7 +54,7 @@ source_gambar = None
 
 if menu_input == "📷 Ambil Foto via Kamera":
     # Mengaktifkan kamera internal HP / Webcam Laptop
-    source_gambar = st.camera_input("Posisikan lesi kulit/tahi lalat tepat di tengah kamera dan ambil gambar")
+    source_gambar = st.camera_input("Posisikan lesi kulit tepat di tengah kamera dan ambil gambar")
 else:
     source_gambar = st.file_uploader("Unggah foto lesi kulit (Format: PNG, JPG, JPEG)", type=["png", "jpg", "jpeg"])
 
