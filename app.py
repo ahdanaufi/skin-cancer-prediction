@@ -6,6 +6,8 @@ import streamlit as st
 import numpy as np
 from PIL import Image
 import onnxruntime as ort
+import os
+import urllib.request
 
 # Konfigurasi Halaman Web
 st.set_page_config(page_title="Deteksi Kanker Kulit AI", page_icon="🔬", layout="centered")
@@ -16,8 +18,16 @@ st.write("Aplikasi prediksi medis berbasis model Deep Learning InceptionV3 (Data
 # Memuat Model ONNX
 @st.cache_resource
 def load_onnx_model():
-    # Membuka sesi model ONNX menggunakan CPU Runtime server yang sangat ringan
-    session = ort.InferenceSession("best_inceptionv3_ham10000.onnx")
+    model_path = "best_inceptionv3_ham10000.onnx"
+    
+    # Jika file model belum ada di server Streamlit, download otomatis dari GitHub Release
+    if not os.path.exists(model_path):
+        with st.spinner("Mengunduh model ONNX dari server (hanya dilakukan sekali)..."):
+            # GANTI URL di bawah ini dengan URL file .onnx dari halaman Release kamu
+            url = "sha256:6e5504165802b0571fbb2b9879ea006cadc6eea061c92723e1e1f6b1949e0885"
+            urllib.request.urlretrieve(url, model_path)
+            
+    session = ort.InferenceSession(model_path)
     return session
 
 try:
