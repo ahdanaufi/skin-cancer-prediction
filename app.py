@@ -1,33 +1,32 @@
 # ==============================================================================
-# PART 2: STREAMLIT WEB APPLICATION
+# PART 2: STREAMLIT WEB APPLICATION (CLEAN & FIXED)
 # ==============================================================================
 
 import streamlit as st
-import tensorflow as tf
 import numpy as np
 from PIL import Image
 import os
 import urllib.request
+import tflite_runtime.interpreter as tflite 
 
-# Konfigurasi Halaman Web
+# Konfigurasi Halaman Web (Hanya boleh dipanggil 1 kali di paling atas)
 st.set_page_config(page_title="Deteksi Kanker Kulit AI", page_icon="🔬", layout="centered")
 
 st.title("🔬 Deteksi Kanker Kulit & Lesi Dermoskopi")
 st.write("Aplikasi prediksi medis berbasis model Deep Learning InceptionV3 (Dataset HAM10000).")
 
-# Memuat Model TF Lite (Cepat, Ringan, Hemat RAM Server Cloud)
+# Memuat Model TF Lite dengan Fitur Auto-Download jika menggunakan Solusi Release GitHub
 @st.cache_resource
 def load_model():
     model_path = "best_inceptionv3_ham10000.tflite"
     
-    # KUNCI UTAMA: Jika model belum ada di server Streamlit, download otomatis
-    if not os.path.exists(model_path):
-        with st.spinner("Mengunduh model dari server (hanya dilakukan sekali)..."):
-            # GANTI URL DI BAWAH INI dengan Link Address yang kamu copy dari Release tadi!
-            url = "sha256:e0e3d6cabcdc3a6bfcea3f655de52dcd56bea61ad5e50d05242d2aebd405f627"
-            urllib.request.urlretrieve(url, model_path)
+    # JIKA kamu pakai Solusi 1 (fitur Release GitHub), aktifkan baris di bawah ini:
+    # if not os.path.exists(model_path):
+    #     with st.spinner("Mengunduh model dari server (hanya dilakukan sekali)..."):
+    #         url = "TULIS_URL_RELEASE_KAMU_DISINI"
+    #         urllib.request.urlretrieve(url, model_path)
             
-    interpreter = tf.lite.Interpreter(model_path=model_path)
+    interpreter = tflite.Interpreter(model_path=model_path)
     interpreter.allocate_tensors()
     return interpreter
 
@@ -48,7 +47,7 @@ DESKRIPSI_KELAS = {
     'Benign Keratosis': "🟢 **Jinak (Benign).** Tumor jinak superfisial kulit yang biasa muncul karena faktor penuaan.",
     'Actinic Keratosis': "🟡 **Pre-Kanker.** Lesi kasar bersisik yang berpotensi berubah menjadi keganasan sel skuamosa di masa depan.",
     'Vascular Lesions': "🟢 **Jinak (Benign).** Tumor atau pertumbuhan pembuluh darah jinak seperti angioma.",
-    'Dermatofibroma Mini': "🟢 **Jinak (Benign).** Nodul kulit jinak kecil yang biasanya muncul di area kaki."
+    'Dermatofibroma': "🟢 **Jinak (Benign).** Nodul kulit jinak kecil yang biasanya muncul di area kaki." 
 }
 
 # Interface Upload Gambar oleh Pengguna
@@ -77,7 +76,7 @@ if uploaded_file is not None:
     confidence_score = predictions[best_idx] * 100
 
     # Menampilkan Hasil Akhir ke Pengguna
-    st.success("🎉 Analisis Prediksi Sembuh/Selesai!")
+    st.success("🎉 Analisis Prediksi Selesai!")
     st.subheader(f"Klasifikasi Terdeteksi: **{label_final}**")
     st.metric(label="Confidence Score", value=f"{confidence_score:.2f}%")
     
@@ -92,5 +91,5 @@ if uploaded_file is not None:
         st.write(f"**{label}** ({score:.2f}%)")
         st.progress(int(score))
 
-    # Regulasi Keamanan Medis (Disclaimer)
-    st.warning("⚠️ **Disclaimer Medis:** Hasil analisis berbasis Kecerdasan Buatan (AI) ini ditujukan untuk riset dan edukasi dengan estimasi akurasi global ~90%. Hasil ini bukan merupakan diagnosis final dokter medis.")
+    # Regulasi Keamanan Medis (Disclaimer disesuaikan dengan performa asli model 77%)
+    st.warning("⚠️ **Disclaimer Medis:** Hasil analisis berbasis Kecerdasan Buatan (AI) ini ditujukan untuk riset dan edukasi dengan estimasi akurasi model ~77%. Hasil ini bukan merupakan diagnosis final dokter medis.")
