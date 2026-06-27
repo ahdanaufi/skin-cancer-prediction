@@ -19,7 +19,7 @@ def load_onnx_model():
     if not os.path.exists(model_path):
         with st.spinner("Mengunduh model ONNX dari server (Proses ini hanya dilakukan sekali saat web pertama kali dibuka)..."):
             # ⚠️ GANTI URL DI BAWAH INI dengan Link Address file .onnx dari halaman Release kamu!
-            url = "sha256:6e5504165802b0571fbb2b9879ea006cadc6eea061c92723e1e1f6b1949e0885"
+            url = "https://github.com/ahdanaufi/skin-cancer-prediction/releases/download/v1.0.0/best_inceptionv3_ham10000.onnx"
             
             # Proses download otomatis ke server Streamlit
             urllib.request.urlretrieve(url, model_path)
